@@ -2,5 +2,5 @@
 
 script_dir="$( cd "$(dirname "$0")" && pwd )"
 
-jar=$script_dir/../altjvm/target/andysum.jar 
+jar=$script_dir/../altjvm/target/neater.jar 
 java -cp $jar scripts.Compare $@
