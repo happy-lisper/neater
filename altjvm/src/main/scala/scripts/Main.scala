@@ -1,5 +1,5 @@
 /*
-Copyright 2013, 2014, 2015, 2016 AndyL
+Copyright 2013, 2014, 2015, 2016 AndyC
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -390,12 +390,16 @@ object Compare extends Funcs {
 }
 
 case class DiffTree(name: String, dirs: List[DiffTree], hash: String, touched: Boolean) {
+  def tmp(level: Int = 0): String = {
+    val ds = dirs.map(_.tmp(level + 1))
+    "l" + level + ":" + name + "." + hash.take(4) + ", " + ds.mkString("-")
+  }
   private def toStringHelper(level: Int): String = {
-    if (touched) {
+    if (true || touched) {
       val ds = dirs.map(_.toStringHelper(level + 1))
-      "\t" * level + name + "/" + touched + "(" + hash + ")" + "\n" + ds.map("\t" + _).mkString("\n")
+      "\t" * level + name + "(" /*+ touched + "."*/ + hash + ")" + "\n" + ds.map("\t" + _).mkString("\n")
     } else
-      "\t" * level + name + "/" + touched + "(" + hash + ")"
+      ""
   }
   override def toString() = {
     toStringHelper(0)
@@ -415,49 +419,64 @@ object DiffTree {
 trait FuncsTree extends Funcs {
   def pruneOne(from: DiffTree, that: DiffTree): (Boolean, DiffTree) = {
     val (removed, without_first_match) = removeFirst(from.dirs)(_.hash == that.hash)
-    if (removed)
+    if (removed) {
+      //println("SUC pruned", that.name + "/" + that.hash, "from", from.name + "/" + from.hash)
+      //println("SUC pruned before", from.dirs.map(_.tmp(0)).mkString("="))
+      //println("SUC pruned after", without_first_match.map(_.tmp(0)).mkString("="))
       (true, DiffTree(from.name, without_first_match, from.hash, true))
-    else {
+    } else {
       val (replaced, with_first_replaced) = applyOnFirst(from.dirs)(pruneOne(_, that))
+      //println("SUC dirs before", from.dirs.map(_.tmp(0)).mkString("="))
+      //println("SUC dirs after ", with_first_replaced.map(_.tmp(0)).mkString("="))
       (replaced, DiffTree(from.name, with_first_replaced, from.hash, replaced))
     }
   }
 
-  def pruneAll(from: DiffTree, that: DiffTree): (Boolean, DiffTree) = {
+  def helper1(from: DiffTree, todos: List[DiffTree], reclist: List[DiffTree] = List(), changed: Boolean = false): (Boolean, DiffTree, List[DiffTree]) = {
+    todos match {
+      case todo :: tail => {
+        val (r, nf) = pruneOne(from, todo)
+        if (r)
+          helper1(nf, tail, reclist, true)
+        else
+          helper1(from, tail, todo :: reclist, changed)
+      }
+      case Nil => (changed, from, reclist)
+    }
+  }
+
+  def helper2(from: DiffTree, todos: List[DiffTree], changed: Boolean, level:Int): (Boolean, DiffTree) = {
+    todos match {
+      case todo :: tail => {
+        val (r, nf) = pruneAll(from, todo, level + 1)
+        helper2(nf, tail, r, level)
+      }
+      case Nil => (changed, from)
+    }
+  }
+
+  def pruneAll(from: DiffTree, that: DiffTree, level: Int = 0): (Boolean, DiffTree) = {
+    println(" "*level+level+"-ATT prunning", that.name + "/" + that.hash, "from", from.name + "/" + from.hash)
     //pruneOne that from from
     val (r, nf) = pruneOne(from, that)
     //if succeded, finish and return new from
-    if (r)
+    if (r) {
+      println(" "*level+level+"-ATT after1", nf.tmp(0))
       (true, nf)
-    else {
+    } else {
       // for every that[i] pruneOne it from from
       // if succeded, use new from
       // else incude that[i] to reclist
-      def helper1(from: DiffTree, todos: List[DiffTree], reclist: List[DiffTree] = List(), changed: Boolean = false): (Boolean, DiffTree, List[DiffTree]) = {
-        todos match {
-          case todo :: tail => {
-            val (r, nf) = pruneOne(from, todo)
-            if (r)
-              helper1(nf, tail, reclist, true)
-            else
-              helper1(from, tail, todo :: reclist, changed)
-          }
-          case Nil => (changed, from, reclist)
-        }
-      }
       val (changed1, from1, reclist1) = helper1(from, that.dirs)
+
+      println(" "*level+level+"-ATT after2a", reclist1.map(_.name).mkString("-"))
+      println(" "*level+level+"-ATT after2b", from1.tmp(0))
+
       //for every reclist[i] pruneAll it from from
       //return last from
-      def helper2(from: DiffTree, todos: List[DiffTree], changed: Boolean): (Boolean, DiffTree) = {
-        todos match {
-          case todo :: tail => {
-            val (r, nf) = pruneAll(from, todo)
-            helper2(nf, tail, r)
-          }
-          case Nil => (changed, from)
-        }
-      }
-      helper2(from1, reclist1, changed1)
+      val tt=helper2(from1, reclist1, changed1, level)
+      println(" "*level+level+"-ATT after3", tt._2.tmp(0))
+      tt
     }
   }
 
@@ -479,9 +498,16 @@ trait FuncsTree extends Funcs {
       return
     }
     val (dt1, dt2) = (DiffTree.fromDirectory(tree1.get), DiffTree.fromDirectory(tree2.get))
-    val added = pruneAll(dt1, dt2)
-    println("added:")
-    println(added)
+
+    println("dt1:")
+    println(dt1)
+
+    println("dt2:")
+    println(dt2)
+
+    //val added = pruneAll(dt1, dt2)
+    //println("added:")
+    //println(added)
 
     val deleted = pruneAll(dt2, dt1)
     println("deleted:")
@@ -592,4 +618,3 @@ object Analyze extends Funcs {
     eqs.foreach(f => println("* " + f.map(_.path.reverse.mkString("/")).mkString(" ")))
   }
 }
-
