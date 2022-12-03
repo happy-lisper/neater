@@ -360,7 +360,7 @@ object Verify extends Funcs {
         println("deleted:")
         sort(deleted).foreach(println)
       }
-      if (deleted.size == 0 && deleted.size == 0)
+      if (added.size == 0 && deleted.size == 0)
         println("untouched.")
 
     } else {
