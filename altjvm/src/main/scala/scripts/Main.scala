@@ -303,15 +303,19 @@ trait Funcs {
     }
 
     {
-      val set_files1 = all_files1.map(x => (x._1, x._2, x._4)).toSet
-      val set_files2 = all_files2.map(x => (x._1, x._2, x._4)).toSet
-      val extra = set_files2 -- set_files1
-      val missing = set_files1 -- set_files2
-      val all = extra ++ missing
-      val all2 = all.groupBy(x => (x._1, x._3)).filter(_._2.size > 1)
-      if (all2.keys.size > 0) {
-        println("touched:")
-        all2.keys.foreach(f => println(f._2 + "->" + f._1))
+      val all1 = all_files1.map(x => (x._1, -1 * x._2.toLong, x._3, x._4))
+      val all2 = all_files2.map(x => (x._1,  1 * x._2.toLong, x._3, x._4))
+      val all = all1 ::: all2
+      val g = all.groupBy(x => (x._1, x._4)).filter(_._2.size == 2).mapValues(x=>x.map(_._2).sum).filterNot(_._2==0)
+      val t1 = g.filter(_._2.abs<=1000)
+      val t2 = g.filter(_._2.abs>1000)
+      if (t1.size > 0) {
+        println("touched <=1000:")
+        t1.foreach(x => println(x._1._2 + "->" + x._1._1+":"+x._2))
+      }
+      if (t2.size > 0) {
+        println("touched >1000:")
+        t2.foreach(x => println(x._1._2 + "->" + x._1._1+":"+x._2))
       }
     }
   }
