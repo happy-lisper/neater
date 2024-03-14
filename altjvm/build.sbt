@@ -3,6 +3,6 @@ name := "NEATER"
 
 version := "0.1"
 
-jarName in assembly := "neater.jar"
+assemblyJarName in assembly := "neater.jar"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.12.12"
