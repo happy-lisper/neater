@@ -98,6 +98,8 @@ case class Directory(name: String,
 }
 
 trait Funcs {
+  val PRX="^^^"
+
   //util
   def removeFirst[T](xs: List[T])(pred: (T) => Boolean): (Boolean, List[T]) = {
     xs match {
@@ -293,11 +295,11 @@ trait Funcs {
       val extra = set_files2 -- set_files1
       val missing = set_files1 -- set_files2
       if (extra.size > 0) {
-        println("extra:")
+        println(PRX+"extra:"+extra.size)
         extra.foreach(f => println(grp_files2(f)))
       }
       if (missing.size > 0) {
-        println("missing:")
+        println(PRX+"missing:"+missing.size)
         missing.foreach(f => println(grp_files1(f)))
       }
     }
@@ -310,11 +312,11 @@ trait Funcs {
       val t1 = g.filter(_._2.abs<=1000)
       val t2 = g.filter(_._2.abs>1000)
       if (t1.size > 0) {
-        println("touched <=1000:")
+        println(PRX+"touched <=1000:"+t1.size)
         t1.foreach(x => println(x._1._2 + "->" + x._1._1+":"+x._2))
       }
       if (t2.size > 0) {
-        println("touched >1000:")
+        println(PRX+"touched >1000:"+t2.size)
         t2.foreach(x => println(x._1._2 + "->" + x._1._1+":"+x._2))
       }
     }
@@ -357,15 +359,15 @@ object Verify extends Funcs {
       val added = set_files -- set_files_neater
       val deleted = set_files_neater -- set_files
       if (added.size > 0) {
-        println("added:")
+        println(PRX+"added:"+added.size)
         sort(added).foreach(println)
       }
       if (deleted.size > 0) {
-        println("deleted:")
+        println(PRX+"deleted:"+deleted.size)
         sort(deleted).foreach(println)
       }
       if (added.size == 0 && deleted.size == 0)
-        println("untouched.")
+        println(PRX+"untouched.")
 
     } else {
       println(STAMP_FIRST)
@@ -484,11 +486,11 @@ trait FuncsTree extends Funcs {
     }
     val (dt1, dt2) = (DiffTree.fromDirectory(tree1.get), DiffTree.fromDirectory(tree2.get))
     val added = pruneAll(dt1, dt2)
-    println("added:")
+    println(PRX+"added:")
     println(added)
 
     val deleted = pruneAll(dt2, dt1)
-    println("deleted:")
+    println(PRX+"deleted:")
     println(deleted)
   }
 }
